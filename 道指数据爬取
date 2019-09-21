@@ -1,0 +1,82 @@
+import requests
+import re
+from bs4 import BeautifulSoup
+import pandas as pd
+allUniv=[]
+def gethtmltext(url):
+    try:
+        r=requests.get(url)
+        r.raise_for_status()
+        # r.encoding="utf-8"
+        return r.text
+    except:
+        return ""
+def fillUnivList(soup):
+    data=soup.find_all("tr")
+    for tr in data:
+        ltd=tr.find_all("td")
+        if len(ltd)==0:
+            continue
+        singleUniv=[]
+        for td in ltd:
+            singleUniv.append(td.getText("|",strip=True))
+        allUniv.append(singleUniv)
+url="https://money.cnn.com/data/dow30/"
+html=gethtmltext(url)
+soup=BeautifulSoup(html,"html.parser")
+fillUnivList(soup)
+djidf=pd.DataFrame(allUniv)
+print(allUniv)
+djidf.drop(index=0,inplace=True) #删除无效的第0行
+djidf["Code"]=djidf.iloc[:,0].str.split("|").str[0] #分列生成第一列
+djidf["Name"]=djidf.iloc[:,0].str.split("|").str[1] #分列生成第二列
+djidf.drop(columns=0,inplace=True) #删除原有的待分列的那列
+djidf.columns=["Price","Change","%Change","Volumn","YTD","Code","Name"] #给列名赋值
+djidf=djidf[["Code","Name","Price","Change","%Change","Volumn","YTD"]] #调整列顺序，切片
+# print(djidf)
+quotesdf = pd.read_csv("AXP.csv")
+# quotesdf["Date"]=pd.to_datetime(quotesdf["Date"]) #日期字符串转为日期格式
+# quotesdf["Month"]=quotesdf["Date"].values.astype("datetime64[M]")
+quotesdf["Year"]=quotesdf["Date"].str.split("-").str[0]
+quotesdf["Month"]=quotesdf["Date"].str.split("-").str[1]#分列生成第一列
+quotesdf["Year"]=quotesdf["Year"].astype("int") #数据格式转换
+quotesdf["Month"]=quotesdf["Month"].astype("int")
+# quotesdf2=quotesdf[quotesdf["Year"].isin(["2018"])] #字符型筛选
+quotesdf2=quotesdf[quotesdf["Year"]==2018] #数值型筛选
+print(quotesdf.dtypes)
+# print(quotesdf2)
+quotesdf3=quotesdf2.groupby("Month")["Adj Close"].mean()
+print(quotesdf3)
+# print(type(quotesdf["Date"]))
+
+
+
+# import requests
+# import re
+# import pandas as pd
+# from bs4 import BeautifulSoup
+# try:
+#     r = requests.get('https://money.cnn.com/data/dow30/')
+# except ConnectionError as err:
+#     print(err)
+# # soup=BeautifulSoup(r.text,"html.parser")
+# search_pattern = re.compile(
+#     'class="wsod_symbol">(.*)</a>.*<span title=.*?">(.*?)</span>'
+#     '.*?\n.*?class="wsod_stream">(.*?)</span>'
+#     '.*?\n.*?class="negData">(.*?)</span></span>'
+#     '.*?\n.*?class="negChangePct">(.*?)</span></span>'
+#     '.*?\n.*?class="wsod_aRight">(.*?)</td>'
+#     '\n.*?><span class=.*">(.*?)</span></td>')
+# dji_list_in_text = re.findall(search_pattern, r.text)
+# # dji_list = []
+# # for item in dji_list_in_text:
+# #     dji_list.append([item[0], item[pandas_exercises], float(item[2]), item[3], item[4], item[5], item[6]])
+# # djidf = pd.DataFrame(dji_list)
+# djidf = pd.DataFrame(dji_list_in_text)
+# djidf.columns=["Code","Name","Price","Change","%Change","Volumn","YTD"]
+# quotesdf=pd.read_csv("AXP.csv")
+# # print(dji_list_in_text)
+# print(djidf)
+# print(quotesdf)
+# # print(dji_list_in_text )
+# # print(dji_list)
